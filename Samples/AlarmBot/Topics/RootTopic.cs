@@ -28,12 +28,12 @@ namespace AlarmBot.Topics
             this.AddSubTopic(DELETE_ALARM_TOPIC, nameof(CreateDeleteAlarmTopic));
         }
 
-        private DeleteAlarmTopic CreateDeleteAlarmTopic(IBotContext context, object[] args)
+        private DeleteAlarmTopic CreateDeleteAlarmTopic(List<Alarm> args)
         {
-            var deleteAlarmTopic = new DeleteAlarmTopic((List<Alarm>)args[0]);
+            var deleteAlarmTopic = new DeleteAlarmTopic(args);
 
             deleteAlarmTopic.Set
-                .OnSuccess((ctx, value) =>
+                .OnSuccess((context, value) =>
                 {
                     this.ClearActiveTopic();
 
@@ -43,11 +43,11 @@ namespace AlarmBot.Topics
                         return;
                     }
 
-                        ((List<Alarm>)ctx.State.UserProperties[USER_STATE_ALARMS]).RemoveAt(value.AlarmIndex);
+                        ((List<Alarm>)context.State.UserProperties[USER_STATE_ALARMS]).RemoveAt(value.AlarmIndex);
 
                     context.Reply($"Done. I've deleted alarm '{ value.Alarm.Title }'.");
                 })
-                .OnFailure((ctx, reason) =>
+                .OnFailure((context, reason) =>
                 {
                     this.ClearActiveTopic();
 
@@ -59,26 +59,26 @@ namespace AlarmBot.Topics
             return deleteAlarmTopic;
         }
 
-        private AddAlarmTopic CreateAddAlarmTopic(IBotContext context)
+        private AddAlarmTopic CreateAddAlarmTopic()
         {
             var addAlarmTopic = new AddAlarmTopic();
 
             addAlarmTopic.Set
-                .OnSuccess((ctx, alarm) =>
+                .OnSuccess((context, alarm) =>
                 {
                     this.ClearActiveTopic();
 
-                    ((List<Alarm>)ctx.State.UserProperties[USER_STATE_ALARMS]).Add(alarm);
+                    ((List<Alarm>)context.State.UserProperties[USER_STATE_ALARMS]).Add(alarm);
 
                     context.Reply($"Added alarm named '{ alarm.Title }' set for '{ alarm.Time }'.");
                 })
-                .OnFailure((ctx, reason) =>
+                .OnFailure((context, reason) =>
                 {
                     this.ClearActiveTopic();
 
                     context.Reply("Let's try something else.");
 
-                    this.ShowDefaultMessage(ctx);
+                    this.ShowDefaultMessage(context);
                 });
 
             return addAlarmTopic;
