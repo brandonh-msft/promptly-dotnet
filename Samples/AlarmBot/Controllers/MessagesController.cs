@@ -1,17 +1,16 @@
-﻿using AlarmBot.Topics;
+﻿using System.Threading.Tasks;
+using AlarmBot.Topics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Bot.Builder;
-using Microsoft.Bot.Builder.BotFramework;
+using Microsoft.Bot.Builder.Adapters;
 using Microsoft.Bot.Schema;
-using PromptlyBot;
-using System.Threading.Tasks;
 
 namespace AlarmBot.Controllers
 {
     [Route("api/[controller]")]
     public class MessagesController : BotController
     {
-        public MessagesController(Bot bot) : base(bot) { }
+        public MessagesController(BotFrameworkAdapter bot) : base(bot) { }
 
         protected override Task OnReceiveActivity(IBotContext context)
         {

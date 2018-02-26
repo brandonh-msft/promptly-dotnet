@@ -19,9 +19,9 @@ namespace AlarmBot.Topics
         {
             // User state initialization should be done once in the welcome 
             //  new user feature. Placing it here until that feature is added.
-            if (context.State.User[USER_STATE_ALARMS] == null)
+            if (context.State.UserProperties[USER_STATE_ALARMS] == null)
             {
-                context.State.User[USER_STATE_ALARMS] = new List<Alarm>();
+                context.State.UserProperties[USER_STATE_ALARMS] = new List<Alarm>();
             }
 
             this.SubTopics.Add(ADD_ALARM_TOPIC, (object[] args) =>
@@ -33,7 +33,7 @@ namespace AlarmBot.Topics
                         {
                             this.ClearActiveTopic();
 
-                            ((List<Alarm>)ctx.State.User[USER_STATE_ALARMS]).Add(alarm);
+                            ((List<Alarm>)ctx.State.UserProperties[USER_STATE_ALARMS]).Add(alarm);
 
                             context.Reply($"Added alarm named '{ alarm.Title }' set for '{ alarm.Time }'.");
                         })
@@ -64,7 +64,7 @@ namespace AlarmBot.Topics
                                 return;
                             }
 
-                            ((List<Alarm>)ctx.State.User[USER_STATE_ALARMS]).RemoveAt(value.AlarmIndex);
+                            ((List<Alarm>)ctx.State.UserProperties[USER_STATE_ALARMS]).RemoveAt(value.AlarmIndex);
 
                             context.Reply($"Done. I've deleted alarm '{ value.Alarm.Title }'.");
                         })
@@ -96,7 +96,7 @@ namespace AlarmBot.Topics
 
                 if (message.Text.ToLowerInvariant() == "delete alarm")
                 {
-                    this.SetActiveTopic(DELETE_ALARM_TOPIC, context.State.User[USER_STATE_ALARMS])
+                    this.SetActiveTopic(DELETE_ALARM_TOPIC, context.State.UserProperties[USER_STATE_ALARMS])
                         .OnReceiveActivity(context);
                     return Task.CompletedTask;
                 }
@@ -105,7 +105,7 @@ namespace AlarmBot.Topics
                 {
                     this.ClearActiveTopic();
 
-                    AlarmsView.ShowAlarms(context, context.State.User[USER_STATE_ALARMS]);
+                    AlarmsView.ShowAlarms(context, context.State.UserProperties[USER_STATE_ALARMS]);
                     return Task.CompletedTask;
                 }
 

@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Bot.Builder;
-using Microsoft.Bot.Builder.BotFramework;
+using Microsoft.Bot.Builder.Adapters;
+using Microsoft.Bot.Builder.Middleware;
 using Microsoft.Bot.Builder.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,9 +21,9 @@ namespace AlarmBot
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddSingleton(
-                new Bot(new BotFrameworkAdapter(Configuration))
-                    .Use(new BotStateManager(new MemoryStorage())
-                )    
+                new BotFrameworkAdapter(Configuration)
+                    .Use(new UserStateManagerMiddleware(new MemoryStorage()))
+                    .Use(new ConversationStateManagerMiddleware(new MemoryStorage()))
             );
 
             services.AddMvc();
