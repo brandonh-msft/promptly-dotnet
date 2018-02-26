@@ -1,14 +1,19 @@
-﻿using AlarmBot.Models;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
+using AlarmBot.Models;
 using AlarmBot.Views;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Schema;
 using PromptlyBot;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace AlarmBot.Topics
 {
-    public class RootTopic : TopicsRoot
+    public struct RootCreationOptions
+    {
+        public IList<Alarm> AlarmsToDelete { get; set; }
+    }
+
+    public class RootTopic : TopicsRoot<RootCreationOptions>
     {
         private const string ADD_ALARM_TOPIC = "addAlarmTopic";
         private const string DELETE_ALARM_TOPIC = "deleteAlarmTopic";
@@ -24,7 +29,7 @@ namespace AlarmBot.Topics
                 context.State.UserProperties[USER_STATE_ALARMS] = new List<Alarm>();
             }
 
-            this.SubTopics.Add(ADD_ALARM_TOPIC, (object[] args) =>
+            this.SubTopics.Add(ADD_ALARM_TOPIC, (args) =>
             {
                 var addAlarmTopic = new AddAlarmTopic();
 
@@ -42,16 +47,16 @@ namespace AlarmBot.Topics
                             this.ClearActiveTopic();
 
                             context.Reply("Let's try something else.");
-                            
+
                             this.ShowDefaultMessage(ctx);
                         });
 
                 return addAlarmTopic;
             });
 
-            this.SubTopics.Add(DELETE_ALARM_TOPIC, (object[] args) =>
+            this.SubTopics.Add(DELETE_ALARM_TOPIC, (args) =>
             {
-                var deleteAlarmTopic = new DeleteAlarmTopic((List<Alarm>) args[0]);
+                var deleteAlarmTopic = new DeleteAlarmTopic(args.AlarmsToDelete);
 
                 deleteAlarmTopic.Set
                     .OnSuccess((ctx, value) =>

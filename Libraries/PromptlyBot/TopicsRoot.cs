@@ -2,7 +2,7 @@
 
 namespace PromptlyBot
 {
-    public abstract class TopicsRoot : ConversationTopic<ConversationTopicState>
+    public abstract class TopicsRoot<TCreateOptions> : ConversationTopic<ConversationTopicState, TCreateOptions>
     {
         public TopicsRoot(IBotContext context) : base()
         {

@@ -1,8 +1,8 @@
-﻿using AlarmBot.Models;
+﻿using System.Threading.Tasks;
+using AlarmBot.Models;
 using Microsoft.Bot.Builder;
 using PromptlyBot;
 using PromptlyBot.Validator;
-using System.Threading.Tasks;
 
 namespace AlarmBot.Topics
 {
@@ -11,14 +11,14 @@ namespace AlarmBot.Topics
         public Alarm alarm = new Alarm();
     }
 
-    public class AddAlarmTopic : ConversationTopic<AddAlarmTopicState, Alarm>
+    public class AddAlarmTopic : ConversationTopic<AddAlarmTopicState, Alarm, AlarmCreateOptions>
     {
         private const string TITLE_PROMPT = "titlePrompt";
         private const string TIME_PROMPT = "timePrompt";
 
         public AddAlarmTopic() : base()
         {
-            this.SubTopics.Add(TITLE_PROMPT, (object[] args) =>
+            this.SubTopics.Add(TITLE_PROMPT, (args) =>
             {
                 var titlePrompt = new Prompt<string>();
 
@@ -58,7 +58,7 @@ namespace AlarmBot.Topics
                 return titlePrompt;
             });
 
-            this.SubTopics.Add(TIME_PROMPT, (object[] args) =>
+            this.SubTopics.Add(TIME_PROMPT, (args) =>
             {
                 var timePrompt = new Prompt<string>();
 
@@ -121,6 +121,8 @@ namespace AlarmBot.Topics
             return Task.CompletedTask;
         }
     }
+
+    public struct AlarmCreateOptions { }
 
     public class AlarmTitleValidator : Validator<string>
     {

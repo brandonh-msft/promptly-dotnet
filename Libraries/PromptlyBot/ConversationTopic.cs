@@ -1,6 +1,6 @@
-﻿using Microsoft.Bot.Builder;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using Microsoft.Bot.Builder;
 
 namespace PromptlyBot
 {
@@ -15,34 +15,23 @@ namespace PromptlyBot
         public ActiveTopicState ActiveTopic;
     }
 
-    public delegate ITopic CreateSubTopicDelegate(params object[] args);
+    public delegate ITopic CreateSubTopicDelegate<T>(T createOptions = default(T));
 
-    public abstract class ConversationTopic<TState> : Topic<TState> where TState : ConversationTopicState, new()
+    public abstract class ConversationTopic<TState, TCreateOptions> : Topic<TState> where TState : ConversationTopicState, new()
     {
-        private readonly ConversationTopicFluentInterface _set;
-
         public ConversationTopic() : base()
         {
-            this._set = new ConversationTopicFluentInterface(this);
+            this.Set = new ConversationTopicFluentInterface(this);
         }
 
-        new public ConversationTopicFluentInterface Set { get => _set; }
+        new public ConversationTopicFluentInterface Set { get; private set; }
 
-        private Dictionary<string, CreateSubTopicDelegate> _subTopics = new Dictionary<string, CreateSubTopicDelegate>();
-        public Dictionary<string, CreateSubTopicDelegate> SubTopics { get => _subTopics; }
+        public Dictionary<string, CreateSubTopicDelegate<TCreateOptions>> SubTopics { get; } = new Dictionary<string, CreateSubTopicDelegate<TCreateOptions>>();
 
         private ITopic _activeTopic;
-        public ITopic SetActiveTopic(string subTopicKey, params object[] args)
+        public ITopic SetActiveTopic(string subTopicKey, TCreateOptions args = default(TCreateOptions))
         {
-            if (args.Length > 0)
-            {
-                this._activeTopic = this._subTopics[subTopicKey](args);
-            }
-            else
-            {
-                this._activeTopic = this._subTopics[subTopicKey]();
-            }
-
+            this._activeTopic = this.SubTopics[subTopicKey](args);
             this._state.ActiveTopic = new ActiveTopicState { Key = subTopicKey, State = this._activeTopic.State };
 
             return this._activeTopic;
@@ -61,7 +50,7 @@ namespace PromptlyBot
                     return this._activeTopic;
                 }
 
-                this._activeTopic = this._subTopics[this._state.ActiveTopic.Key]();
+                this._activeTopic = this.SubTopics[this._state.ActiveTopic.Key]();
                 this._activeTopic.State = this._state.ActiveTopic.State;
 
                 return this._activeTopic;
@@ -74,9 +63,9 @@ namespace PromptlyBot
 
         public class ConversationTopicFluentInterface
         {
-            private readonly ConversationTopic<TState> _ConversationTopic;
+            private readonly ConversationTopic<TState, TCreateOptions> _ConversationTopic;
 
-            public ConversationTopicFluentInterface(ConversationTopic<TState> conversationTopic)
+            public ConversationTopicFluentInterface(ConversationTopic<TState, TCreateOptions> conversationTopic)
             {
                 this._ConversationTopic = conversationTopic;
             }
@@ -95,7 +84,7 @@ namespace PromptlyBot
         }
     }
 
-    public abstract class ConversationTopic<TState, TValue> : ConversationTopic<TState> where TState : ConversationTopicState, new()
+    public abstract class ConversationTopic<TState, TValue, TCreateOptions> : ConversationTopic<TState, TCreateOptions> where TState : ConversationTopicState, new()
     {
         private readonly ConversationTopicValueFluentInterface _set;
 
@@ -111,9 +100,9 @@ namespace PromptlyBot
 
         public class ConversationTopicValueFluentInterface
         {
-            private readonly ConversationTopic<TState, TValue> _ConversationTopicValue;
+            private readonly ConversationTopic<TState, TValue, TCreateOptions> _ConversationTopicValue;
 
-            public ConversationTopicValueFluentInterface(ConversationTopic<TState, TValue> conversationTopicValue)
+            public ConversationTopicValueFluentInterface(ConversationTopic<TState, TValue, TCreateOptions> conversationTopicValue)
             {
                 this._ConversationTopicValue = conversationTopicValue;
             }

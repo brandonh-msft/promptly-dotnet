@@ -1,15 +1,12 @@
-﻿using AlarmBot.Models;
+﻿using System.Collections.Generic;
+using AlarmBot.Models;
 using Microsoft.Bot.Builder;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace AlarmBot.Views
 {
     public static class AlarmsView
     {
-        public static void ShowAlarms(IBotContext context, List<Alarm> alarms)
+        public static void ShowAlarms(IBotContext context, IList<Alarm> alarms)
         {
             if ((alarms == null) || (alarms.Count == 0))
             {

@@ -1,18 +1,17 @@
-﻿using AlarmBot.Models;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using AlarmBot.Models;
 using AlarmBot.Views;
 using Microsoft.Bot.Builder;
 using PromptlyBot;
 using PromptlyBot.Validator;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace AlarmBot.Topics
 {
     public class DeleteAlarmTopicState : ConversationTopicState
     {
-        public List<Alarm> Alarms;
+        public IList<Alarm> Alarms;
         public int? AlarmIndex;
         public Alarm Alarm = new Alarm();
         public bool? DeleteConfirmed;
@@ -25,19 +24,19 @@ namespace AlarmBot.Topics
         public bool DeleteConfirmed;
     }
 
-    public class DeleteAlarmTopic : ConversationTopic<DeleteAlarmTopicState, DeleteAlarmTopicValue>
+    public class DeleteAlarmTopic : ConversationTopic<DeleteAlarmTopicState, DeleteAlarmTopicValue, DeleteAlarmTopicOptions>
     {
         private const string WHICH_ALARM_PROMPT = "whichAlarmPrompt";
         private const string CONFIRM_DELETE_PROMPT = "confirmDeletePrompt";
 
-        public DeleteAlarmTopic(List<Alarm> alarms) : base()    
+        public DeleteAlarmTopic(IList<Alarm> alarms) : base()
         {
             if (alarms != null)
             {
                 this._state.Alarms = alarms;
             }
 
-            this.SubTopics.Add(WHICH_ALARM_PROMPT, (object[] args) =>
+            this.SubTopics.Add(WHICH_ALARM_PROMPT, (args) =>
             {
                 var whichAlarmPrompt = new Prompt<int>();
 
@@ -79,7 +78,7 @@ namespace AlarmBot.Topics
                 return whichAlarmPrompt;
             });
 
-            this.SubTopics.Add(CONFIRM_DELETE_PROMPT, (object[] args) =>
+            this.SubTopics.Add(CONFIRM_DELETE_PROMPT, (args) =>
             {
                 var confirmDeletePrompt = new Prompt<bool>();
 
@@ -172,13 +171,17 @@ namespace AlarmBot.Topics
         }
     }
 
+    public class DeleteAlarmTopicOptions
+    {
+    }
+
     public class AlarmIndexValidator : Validator<int>
     {
         private List<Alarm> _alarms;
 
-        public AlarmIndexValidator(List<Alarm> alarms) : base()
+        public AlarmIndexValidator(IList<Alarm> alarms) : base()
         {
-            _alarms = alarms;
+            _alarms = alarms.ToList();
         }
 
         public override ValidatorResult<int> Validate(IBotContext context)
@@ -215,7 +218,7 @@ namespace AlarmBot.Topics
                     Value = true
                 };
             }
-            else if(message == "no")
+            else if (message == "no")
             {
                 return new ValidatorResult<bool>
                 {
