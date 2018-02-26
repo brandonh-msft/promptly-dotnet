@@ -7,8 +7,9 @@ namespace PromptlyBot
 {
     public class ActiveTopicState
     {
-        public string Key;
-        public object State;
+        public string Key { get; set; }
+        public object State { get; set; }
+        public object[] Args { get; set; }
     }
 
     public class ConversationTopicState
@@ -39,7 +40,7 @@ namespace PromptlyBot
         {
             this._activeTopic = this._subTopics[subTopicKey].Invoke(this, args) as ITopic;
 
-            this._state.ActiveTopic = new ActiveTopicState { Key = subTopicKey, State = this._activeTopic.State };
+            this._state.ActiveTopic = new ActiveTopicState { Key = subTopicKey, State = this._activeTopic.State, Args = args };
 
             return this._activeTopic;
         }
@@ -57,7 +58,7 @@ namespace PromptlyBot
                     return this._activeTopic;
                 }
 
-                this._activeTopic = this._subTopics[this._state.ActiveTopic.Key].Invoke(this, null) as ITopic; // TODO: can't pass args here? is this a problem?? I think so...
+                this._activeTopic = this._subTopics[this._state.ActiveTopic.Key].Invoke(this, _state.ActiveTopic.Args) as ITopic;
                 this._activeTopic.State = this._state.ActiveTopic.State;
 
                 return this._activeTopic;
