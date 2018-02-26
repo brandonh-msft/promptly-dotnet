@@ -24,7 +24,7 @@ namespace AlarmBot.Topics
         public bool DeleteConfirmed;
     }
 
-    public class DeleteAlarmTopic : ConversationTopic<DeleteAlarmTopicState, DeleteAlarmTopicValue, DeleteAlarmTopicOptions>
+    public class DeleteAlarmTopic : ConversationTopicWithValue<DeleteAlarmTopicState, DeleteAlarmTopicValue, DeleteAlarmTopicOptions>
     {
         private const string WHICH_ALARM_PROMPT = "whichAlarmPrompt";
         private const string CONFIRM_DELETE_PROMPT = "confirmDeletePrompt";

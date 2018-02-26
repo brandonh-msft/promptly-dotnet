@@ -17,25 +17,27 @@ namespace PromptlyBot
 
     public delegate ITopic CreateSubTopicDelegate<T>(T createOptions = default(T));
 
-    public abstract class ConversationTopic<TState, TCreateOptions> : Topic<TState> where TState : ConversationTopicState, new()
+    public struct NoOptions { }
+
+    public abstract class ConversationTopic<TState> : Topic<TState> where TState : ConversationTopicState, new()
     {
+        public Dictionary<string, CreateSubTopicDelegate<NoOptions>> SubTopics { get; } = new Dictionary<string, CreateSubTopicDelegate<NoOptions>>();
+
         public ConversationTopic() : base()
         {
             this.Set = new ConversationTopicFluentInterface(this);
         }
 
         new public ConversationTopicFluentInterface Set { get; private set; }
-
-        public Dictionary<string, CreateSubTopicDelegate<TCreateOptions>> SubTopics { get; } = new Dictionary<string, CreateSubTopicDelegate<TCreateOptions>>();
-
-        private ITopic _activeTopic;
-        public ITopic SetActiveTopic(string subTopicKey, TCreateOptions args = default(TCreateOptions))
+        protected ITopic _activeTopic;
+        public virtual ITopic SetActiveTopic(string subTopicKey)
         {
-            this._activeTopic = this.SubTopics[subTopicKey](args);
+            this._activeTopic = this.SubTopics[subTopicKey]();
             this._state.ActiveTopic = new ActiveTopicState { Key = subTopicKey, State = this._activeTopic.State };
 
             return this._activeTopic;
         }
+
         public ITopic ActiveTopic
         {
             get
@@ -63,9 +65,9 @@ namespace PromptlyBot
 
         public class ConversationTopicFluentInterface
         {
-            private readonly ConversationTopic<TState, TCreateOptions> _ConversationTopic;
+            private readonly ConversationTopic<TState> _ConversationTopic;
 
-            public ConversationTopicFluentInterface(ConversationTopic<TState, TCreateOptions> conversationTopic)
+            internal ConversationTopicFluentInterface(ConversationTopic<TState> conversationTopic)
             {
                 this._ConversationTopic = conversationTopic;
             }
@@ -84,40 +86,103 @@ namespace PromptlyBot
         }
     }
 
-    public abstract class ConversationTopic<TState, TValue, TCreateOptions> : ConversationTopic<TState, TCreateOptions> where TState : ConversationTopicState, new()
+    public abstract class ConversationTopic<TState, TCreateOptions> : ConversationTopic<TState> where TState : ConversationTopicState, new()
     {
-        private readonly ConversationTopicValueFluentInterface _set;
+        new public Dictionary<string, CreateSubTopicDelegate<TCreateOptions>> SubTopics { get; } = new Dictionary<string, CreateSubTopicDelegate<TCreateOptions>>();
 
-        public ConversationTopic() : base()
+        public override ITopic SetActiveTopic(string subTopicKey) => SetActiveTopic(subTopicKey, default(TCreateOptions));
+
+        public ITopic SetActiveTopic(string subTopicKey, TCreateOptions args)
         {
-            this._set = new ConversationTopicValueFluentInterface(this);
+            this._activeTopic = this.SubTopics[subTopicKey](args);
+            this._state.ActiveTopic = new ActiveTopicState { Key = subTopicKey, State = this._activeTopic.State };
+
+            return this._activeTopic;
+        }
+    }
+
+    public abstract class ConversationTopicWithValue<TState, TValue> : Topic<TState, TValue> where TState : ConversationTopicState, new()
+    {
+        public Dictionary<string, CreateSubTopicDelegate<NoOptions>> SubTopics { get; } = new Dictionary<string, CreateSubTopicDelegate<NoOptions>>();
+
+        public ConversationTopicWithValue() : base()
+        {
+            this.Set = new ConversationTopicValueFluentInterface(this);
         }
 
-        new public ConversationTopicValueFluentInterface Set { get => _set; }
+        new public ConversationTopicValueFluentInterface Set { get; private set; }
 
-        private Action<IBotContext, TValue> _onSuccessValue;
-        new public Action<IBotContext, TValue> OnSuccess { get => _onSuccessValue; set => _onSuccessValue = value; }
+        protected ITopic _activeTopic;
+        public virtual ITopic SetActiveTopic(string subTopicKey)
+        {
+            this._activeTopic = this.SubTopics[subTopicKey]();
+            this._state.ActiveTopic = new ActiveTopicState { Key = subTopicKey, State = this._activeTopic.State };
+
+            return this._activeTopic;
+        }
+
+        public ITopic ActiveTopic
+        {
+            get
+            {
+                if (this._state.ActiveTopic == null)
+                {
+                    return null;
+                }
+
+                if (this._activeTopic != null)
+                {
+                    return this._activeTopic;
+                }
+
+                this._activeTopic = this.SubTopics[this._state.ActiveTopic.Key]();
+                this._activeTopic.State = this._state.ActiveTopic.State;
+
+                return this._activeTopic;
+            }
+        }
+
+        new public Action<IBotContext, TValue> OnSuccess { get; set; }
+
+        public bool HasActiveTopic => (this._state.ActiveTopic != null);
+
+        public void ClearActiveTopic() => this._state.ActiveTopic = null;
 
         public class ConversationTopicValueFluentInterface
         {
-            private readonly ConversationTopic<TState, TValue, TCreateOptions> _ConversationTopicValue;
+            private readonly ConversationTopicWithValue<TState, TValue> _ConversationTopic;
 
-            public ConversationTopicValueFluentInterface(ConversationTopic<TState, TValue, TCreateOptions> conversationTopicValue)
+            internal ConversationTopicValueFluentInterface(ConversationTopicWithValue<TState, TValue> conversationTopic)
             {
-                this._ConversationTopicValue = conversationTopicValue;
+                this._ConversationTopic = conversationTopic;
             }
 
             public ConversationTopicValueFluentInterface OnSuccess(Action<IBotContext, TValue> onSuccess)
             {
-                _ConversationTopicValue.OnSuccess = onSuccess;
+                _ConversationTopic.OnSuccess = onSuccess;
                 return this;
             }
 
             public ConversationTopicValueFluentInterface OnFailure(Action<IBotContext, string> onFailure)
             {
-                _ConversationTopicValue.OnFailure = onFailure;
+                _ConversationTopic.OnFailure = onFailure;
                 return this;
             }
+        }
+    }
+
+    public abstract class ConversationTopicWithValue<TState, TValue, TCreateOptions> : ConversationTopicWithValue<TState, TValue> where TState : ConversationTopicState, new()
+    {
+        new public Dictionary<string, CreateSubTopicDelegate<TCreateOptions>> SubTopics { get; } = new Dictionary<string, CreateSubTopicDelegate<TCreateOptions>>();
+
+        public override ITopic SetActiveTopic(string subTopicKey) => SetActiveTopic(subTopicKey, default(TCreateOptions));
+
+        public ITopic SetActiveTopic(string subTopicKey, TCreateOptions args)
+        {
+            this._activeTopic = this.SubTopics[subTopicKey](args);
+            this._state.ActiveTopic = new ActiveTopicState { Key = subTopicKey, State = this._activeTopic.State };
+
+            return this._activeTopic;
         }
     }
 }

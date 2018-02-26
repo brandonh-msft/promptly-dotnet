@@ -11,7 +11,7 @@ namespace AlarmBot.Topics
         public Alarm alarm = new Alarm();
     }
 
-    public class AddAlarmTopic : ConversationTopic<AddAlarmTopicState, Alarm, AlarmCreateOptions>
+    public class AddAlarmTopic : ConversationTopicWithValue<AddAlarmTopicState, Alarm>
     {
         private const string TITLE_PROMPT = "titlePrompt";
         private const string TIME_PROMPT = "timePrompt";

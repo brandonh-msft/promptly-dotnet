@@ -1,6 +1,6 @@
-﻿using Microsoft.Bot.Builder;
-using System;
+﻿using System;
 using System.Threading.Tasks;
+using Microsoft.Bot.Builder;
 
 namespace PromptlyBot
 {
@@ -11,22 +11,20 @@ namespace PromptlyBot
         Task OnReceiveActivity(IBotContext context);
 
         Action<IBotContext> OnSuccess { get; set; }
- 
+
         Action<IBotContext, string> OnFailure { get; set; }
     }
 
     public abstract class Topic<TState> : ITopic where TState : new()
     {
-        private readonly TopicFluentInterface _set;
-
         public Topic() : base()
         {
             this._state = new TState();
 
-            this._set = new TopicFluentInterface(this);
+            this.Set = new TopicFluentInterface(this);
         }
 
-        public TopicFluentInterface Set { get => _set; }
+        public TopicFluentInterface Set { get; }
 
         protected TState _state;
         object ITopic.State { get => _state; set => State = (TState)value; }
