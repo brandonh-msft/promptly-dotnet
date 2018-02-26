@@ -1,12 +1,10 @@
-﻿using AlarmBot.Models;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
+using AlarmBot.Models;
 using AlarmBot.Views;
 using Microsoft.Bot.Builder;
 using PromptlyBot;
 using PromptlyBot.Validator;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace AlarmBot.Topics
 {
@@ -30,95 +28,97 @@ namespace AlarmBot.Topics
         private const string WHICH_ALARM_PROMPT = "whichAlarmPrompt";
         private const string CONFIRM_DELETE_PROMPT = "confirmDeletePrompt";
 
-        public DeleteAlarmTopic(List<Alarm> alarms) : base()    
+        public DeleteAlarmTopic(List<Alarm> alarms) : base()
         {
             if (alarms != null)
             {
                 this._state.Alarms = alarms;
             }
 
-            this.SubTopics.Add(WHICH_ALARM_PROMPT, (object[] args) =>
-            {
-                var whichAlarmPrompt = new Prompt<int>();
+            this.AddSubTopic(WHICH_ALARM_PROMPT, nameof(CreateWhichAlarmPrompt));
+            this.AddSubTopic(CONFIRM_DELETE_PROMPT, nameof(CreateConfirmDeletePrompt));
+        }
 
-                whichAlarmPrompt.Set
-                    .OnPrompt((context, lastTurnReason) =>
+        private Prompt<bool> CreateConfirmDeletePrompt()
+        {
+            var confirmDeletePrompt = new Prompt<bool>();
+
+            confirmDeletePrompt.Set
+                .OnPrompt((context, lastTurnReason) =>
+                {
+                    if ((lastTurnReason != null) & (lastTurnReason == "notyesorno"))
                     {
-                        if ((lastTurnReason != null) && (lastTurnReason == "indexnotfound"))
-                        {
-                            context.Reply($"Sorry, I coulnd't find an alarm named '{ context.Request.AsMessageActivity().Text }'.")
-                                .Reply("Let's try again.");
-                        }
+                        context.Reply("Sorry, I was expecting 'yes' or 'no'.")
+                            .Reply("Let's try again.");
+                    }
 
-                        AlarmsView.ShowAlarms(context, this._state.Alarms);
+                    context.Reply($"Are you sure you want to delete alarm '{ this.State.Alarm.Title }' ('yes' or 'no')?`");
+                })
+                .Validator(new YesOrNoValidator())
+                .MaxTurns(2)
+                .OnSuccess((context, value) =>
+                {
+                    this.ClearActiveTopic();
 
-                        context.Reply("Which alarm would you like to delete?");
-                    })
-                    .Validator(new AlarmIndexValidator(alarms))
-                    .MaxTurns(2)
-                    .OnSuccess((context, index) =>
-                        {
-                            this.ClearActiveTopic();
+                    this.State.DeleteConfirmed = value;
 
-                            this.State.AlarmIndex = index;
+                    this.OnReceiveActivity(context);
+                })
+                .OnFailure((context, reason) =>
+                {
+                    this.ClearActiveTopic();
 
-                            this.OnReceiveActivity(context);
-                        })
-                    .OnFailure(OnFailure = (context, reason) =>
-                        {
-                            this.ClearActiveTopic();
-
-                            if ((reason != null) && (reason == "toomanyattempts"))
-                            {
-                                context.Reply("I'm sorry I'm having issues understanding you.");
-                            }
-
-                            this.OnFailure(context, reason);
-                        });
-
-                return whichAlarmPrompt;
-            });
-
-            this.SubTopics.Add(CONFIRM_DELETE_PROMPT, (object[] args) =>
-            {
-                var confirmDeletePrompt = new Prompt<bool>();
-
-                confirmDeletePrompt.Set
-                    .OnPrompt((context, lastTurnReason) =>
+                    if ((reason != null) && (reason == "toomanyattempts"))
                     {
-                        if ((lastTurnReason != null) & (lastTurnReason == "notyesorno"))
-                        {
-                            context.Reply("Sorry, I was expecting 'yes' or 'no'.")
-                                .Reply("Let's try again.");
-                        }
+                        context.Reply("I'm sorry I'm having issues understanding you.");
+                    }
 
-                        context.Reply($"Are you sure you want to delete alarm '{ this.State.Alarm.Title }' ('yes' or 'no')?`");
-                    })
-                    .Validator(new YesOrNoValidator())
-                    .MaxTurns(2)
-                    .OnSuccess((context, value) =>
-                        {
-                            this.ClearActiveTopic();
+                    this.OnFailure(context, reason);
+                });
 
-                            this.State.DeleteConfirmed = value;
+            return confirmDeletePrompt;
+        }
 
-                            this.OnReceiveActivity(context);
-                        })
-                    .OnFailure((context, reason) =>
-                        {
-                            this.ClearActiveTopic();
+        private Prompt<int> CreateWhichAlarmPrompt(List<Alarm> alarms)
+        {
+            var whichAlarmPrompt = new Prompt<int>();
 
-                            if ((reason != null) && (reason == "toomanyattempts"))
-                            {
-                                context.Reply("I'm sorry I'm having issues understanding you.");
-                            }
+            whichAlarmPrompt.Set
+                .OnPrompt((context, lastTurnReason) =>
+                {
+                    if ((lastTurnReason != null) && (lastTurnReason == "indexnotfound"))
+                    {
+                        context.Reply($"Sorry, I coulnd't find an alarm named '{ context.Request.AsMessageActivity().Text }'.")
+                            .Reply("Let's try again.");
+                    }
 
-                            this.OnFailure(context, reason);
-                        });
+                    AlarmsView.ShowAlarms(context, this._state.Alarms);
 
-                return confirmDeletePrompt;
-            });
+                    context.Reply("Which alarm would you like to delete?");
+                })
+                .Validator(new AlarmIndexValidator(alarms))
+                .MaxTurns(2)
+                .OnSuccess((context, index) =>
+                {
+                    this.ClearActiveTopic();
 
+                    this.State.AlarmIndex = index;
+
+                    this.OnReceiveActivity(context);
+                })
+                .OnFailure(OnFailure = (context, reason) =>
+                {
+                    this.ClearActiveTopic();
+
+                    if ((reason != null) && (reason == "toomanyattempts"))
+                    {
+                        context.Reply("I'm sorry I'm having issues understanding you.");
+                    }
+
+                    this.OnFailure(context, reason);
+                });
+
+            return whichAlarmPrompt;
         }
 
         public override Task OnReceiveActivity(IBotContext context)
@@ -215,7 +215,7 @@ namespace AlarmBot.Topics
                     Value = true
                 };
             }
-            else if(message == "no")
+            else if (message == "no")
             {
                 return new ValidatorResult<bool>
                 {

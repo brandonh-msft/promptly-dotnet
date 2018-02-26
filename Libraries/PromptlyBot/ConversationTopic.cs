@@ -1,6 +1,7 @@
-﻿using Microsoft.Bot.Builder;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
+using Microsoft.Bot.Builder;
 
 namespace PromptlyBot
 {
@@ -15,10 +16,9 @@ namespace PromptlyBot
         public ActiveTopicState ActiveTopic;
     }
 
-    public delegate ITopic CreateSubTopicDelegate(params object[] args);
-
     public abstract class ConversationTopic<TState> : Topic<TState> where TState : ConversationTopicState, new()
     {
+        private const BindingFlags _methodBindingFlags = BindingFlags.Instance | BindingFlags.InvokeMethod | BindingFlags.NonPublic | BindingFlags.Public;
         private readonly ConversationTopicFluentInterface _set;
 
         public ConversationTopic() : base()
@@ -28,20 +28,16 @@ namespace PromptlyBot
 
         new public ConversationTopicFluentInterface Set { get => _set; }
 
-        private Dictionary<string, CreateSubTopicDelegate> _subTopics = new Dictionary<string, CreateSubTopicDelegate>();
-        public Dictionary<string, CreateSubTopicDelegate> SubTopics { get => _subTopics; }
+        private Dictionary<string, MethodInfo> _subTopics = new Dictionary<string, MethodInfo>();
+        public void AddSubTopic(string name, string targetMethodName)
+        {
+            _subTopics.Add(name, this.GetType().GetMethod(targetMethodName, _methodBindingFlags));
+        }
 
         private ITopic _activeTopic;
         public ITopic SetActiveTopic(string subTopicKey, params object[] args)
         {
-            if (args.Length > 0)
-            {
-                this._activeTopic = this._subTopics[subTopicKey](args);
-            }
-            else
-            {
-                this._activeTopic = this._subTopics[subTopicKey]();
-            }
+            this._activeTopic = this._subTopics[subTopicKey].Invoke(this, args) as ITopic;
 
             this._state.ActiveTopic = new ActiveTopicState { Key = subTopicKey, State = this._activeTopic.State };
 
@@ -61,7 +57,7 @@ namespace PromptlyBot
                     return this._activeTopic;
                 }
 
-                this._activeTopic = this._subTopics[this._state.ActiveTopic.Key]();
+                this._activeTopic = this._subTopics[this._state.ActiveTopic.Key].Invoke(this, null) as ITopic; // TODO: can't pass args here? is this a problem?? I think so...
                 this._activeTopic.State = this._state.ActiveTopic.State;
 
                 return this._activeTopic;
