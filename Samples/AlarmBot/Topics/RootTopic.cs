@@ -94,16 +94,13 @@ namespace AlarmBot.Topics
 
                 if (message.Text.ToLowerInvariant() == "add alarm")
                 {
-                    this.SetActiveTopic(ADD_ALARM_TOPIC)
-                            .OnReceiveActivity(context);
-                    return Task.CompletedTask;
+                    return SetActiveTopic(ADD_ALARM_TOPIC).OnReceiveActivity(context);
                 }
 
                 if (message.Text.ToLowerInvariant() == "delete alarm")
                 {
-                    this.SetActiveTopic(DELETE_ALARM_TOPIC, context.State.UserProperties[USER_STATE_ALARMS])
+                    return SetActiveTopic(DELETE_ALARM_TOPIC, new RootCreationOptions { AlarmsToDelete = (IList<Alarm>)context.State.UserProperties[USER_STATE_ALARMS] })
                         .OnReceiveActivity(context);
-                    return Task.CompletedTask;
                 }
 
                 if (message.Text.ToLowerInvariant() == "show alarms")
@@ -124,8 +121,7 @@ namespace AlarmBot.Topics
 
                 if (HasActiveTopic)
                 {
-                    ActiveTopic.OnReceiveActivity(context);
-                    return Task.CompletedTask;
+                    return ActiveTopic.OnReceiveActivity(context);
                 }
 
                 ShowDefaultMessage(context);

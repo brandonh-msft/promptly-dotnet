@@ -35,13 +35,13 @@ namespace AlarmBot.Topics
                         })
                     .Validator(new AlarmTitleValidator())
                     .MaxTurns(2)
-                    .OnSuccess((context, value) =>
+                    .OnSuccess(async (context, value) =>
                         {
                             this.ClearActiveTopic();
 
                             this.State.alarm.Title = value;
 
-                            this.OnReceiveActivity(context);
+                            await this.OnReceiveActivity(context);
                         })
                     .OnFailure((context, reason) =>
                     {
@@ -69,13 +69,13 @@ namespace AlarmBot.Topics
                     })
                     .Validator(new AlarmTimeValidator())
                     .MaxTurns(2)
-                    .OnSuccess((context, value) =>
+                    .OnSuccess(async (context, value) =>
                     {
                         this.ClearActiveTopic();
 
                         this.State.alarm.Time = value;
 
-                        this.OnReceiveActivity(context);
+                        await this.OnReceiveActivity(context);
                     })
                     .OnFailure((context, reason) =>
                     {
@@ -98,22 +98,19 @@ namespace AlarmBot.Topics
         {
             if (HasActiveTopic)
             {
-                ActiveTopic.OnReceiveActivity(context);
-                return Task.CompletedTask;
+                return ActiveTopic.OnReceiveActivity(context);
             }
 
             if (this.State.alarm.Title == null)
             {
                 this.SetActiveTopic(TITLE_PROMPT);
-                this.ActiveTopic.OnReceiveActivity(context);
-                return Task.CompletedTask;
+                return this.ActiveTopic.OnReceiveActivity(context);
             }
 
             if (this.State.alarm.Time == null)
             {
                 this.SetActiveTopic(TIME_PROMPT);
-                this.ActiveTopic.OnReceiveActivity(context);
-                return Task.CompletedTask;
+                return this.ActiveTopic.OnReceiveActivity(context);
             }
 
             this.OnSuccess(context, this.State.alarm);

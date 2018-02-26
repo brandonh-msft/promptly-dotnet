@@ -29,6 +29,7 @@ namespace PromptlyBot
         }
 
         new public ConversationTopicFluentInterface Set { get; private set; }
+
         protected ITopic _activeTopic;
         public virtual ITopic SetActiveTopic(string subTopicKey)
         {

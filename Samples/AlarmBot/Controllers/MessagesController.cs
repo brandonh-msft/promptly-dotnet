@@ -18,7 +18,7 @@ namespace AlarmBot.Controllers
             {
                 var rootTopic = new RootTopic(context);
 
-                rootTopic.OnReceiveActivity(context);
+                return rootTopic.OnReceiveActivity(context);
             }
 
             return Task.CompletedTask;

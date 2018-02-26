@@ -55,25 +55,25 @@ namespace AlarmBot.Topics
                     })
                     .Validator(new AlarmIndexValidator(alarms))
                     .MaxTurns(2)
-                    .OnSuccess((context, index) =>
+                    .OnSuccess(async (context, index) =>
                         {
                             this.ClearActiveTopic();
 
                             this.State.AlarmIndex = index;
 
-                            this.OnReceiveActivity(context);
+                            await this.OnReceiveActivity(context);
                         })
-                    .OnFailure(OnFailure = (context, reason) =>
-                        {
-                            this.ClearActiveTopic();
+                    .OnFailure((context, reason) =>
+                       {
+                           this.ClearActiveTopic();
 
-                            if ((reason != null) && (reason == "toomanyattempts"))
-                            {
-                                context.Reply("I'm sorry I'm having issues understanding you.");
-                            }
+                           if ((reason != null) && (reason == "toomanyattempts"))
+                           {
+                               context.Reply("I'm sorry I'm having issues understanding you.");
+                           }
 
-                            this.OnFailure(context, reason);
-                        });
+                           this.OnFailure(context, reason);
+                       });
 
                 return whichAlarmPrompt;
             });
@@ -95,13 +95,13 @@ namespace AlarmBot.Topics
                     })
                     .Validator(new YesOrNoValidator())
                     .MaxTurns(2)
-                    .OnSuccess((context, value) =>
+                    .OnSuccess(async (context, value) =>
                         {
                             this.ClearActiveTopic();
 
                             this.State.DeleteConfirmed = value;
 
-                            this.OnReceiveActivity(context);
+                            await this.OnReceiveActivity(context);
                         })
                     .OnFailure((context, reason) =>
                         {
@@ -124,8 +124,7 @@ namespace AlarmBot.Topics
         {
             if (HasActiveTopic)
             {
-                ActiveTopic.OnReceiveActivity(context);
-                return Task.CompletedTask;
+                return ActiveTopic.OnReceiveActivity(context);
             }
 
             // If there are no alarms to delete...
@@ -147,8 +146,7 @@ namespace AlarmBot.Topics
                 else
                 {
                     this.SetActiveTopic(WHICH_ALARM_PROMPT);
-                    this.ActiveTopic.OnReceiveActivity(context);
-                    return Task.CompletedTask;
+                    return this.ActiveTopic.OnReceiveActivity(context);
                 }
             }
 
@@ -157,8 +155,7 @@ namespace AlarmBot.Topics
             if (this.State.DeleteConfirmed == null)
             {
                 this.SetActiveTopic(CONFIRM_DELETE_PROMPT);
-                this.ActiveTopic.OnReceiveActivity(context);
-                return Task.CompletedTask;
+                return this.ActiveTopic.OnReceiveActivity(context);
             }
 
             this.OnSuccess(context, new DeleteAlarmTopicValue
@@ -167,6 +164,7 @@ namespace AlarmBot.Topics
                 AlarmIndex = (int)this.State.AlarmIndex,
                 DeleteConfirmed = (bool)this.State.DeleteConfirmed
             });
+
             return Task.CompletedTask;
         }
     }
